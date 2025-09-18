@@ -227,7 +227,7 @@ const TouristDashboard: React.FC<TouristDashboardProps> = ({ user, onLogout }) =
       </div>
 
       {/* SOS Button - Fixed at bottom */}
-      <SOSButton onPress={handleSOSPress} />
+      <SOSButton onPress={handleSOSPress} userId={user.id} />
 
       {/* Digital ID Modal */}
       {showDigitalID && (

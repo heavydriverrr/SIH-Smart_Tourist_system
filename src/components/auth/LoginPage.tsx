@@ -4,6 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Shield, MapPin, Users, AlertTriangle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface LoginPageProps {
   onLogin: (userData: any) => void;
@@ -11,6 +13,7 @@ interface LoginPageProps {
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [isLogin, setIsLogin] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -19,19 +22,47 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     emergencyContact: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate API call
-    const userData = {
-      id: '1',
-      name: formData.name || 'Tourist User',
-      email: formData.email,
-      phone: formData.phone,
-      safetyScore: 85,
-      digitalId: 'TID-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
-      isVerified: true,
-    };
-    onLogin(userData);
+    setIsLoading(true);
+
+    try {
+      if (isLogin) {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password
+        });
+
+        if (error) throw error;
+        toast.success('Welcome back!');
+      } else {
+        const { data, error } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`,
+            data: {
+              name: formData.name,
+              phone: formData.phone,
+              emergency_contact: formData.emergencyContact
+            }
+          }
+        });
+
+        if (error) throw error;
+
+        if (data.user && !data.session) {
+          toast.success('Please check your email to confirm your account!');
+          setIsLogin(true);
+        } else if (data.user) {
+          toast.success('Account created successfully!');
+        }
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Authentication failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -157,8 +188,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 </>
               )}
 
-              <Button type="submit" variant="hero" size="lg" className="w-full">
-                {isLogin ? 'Sign In' : 'Create Account'}
+              <Button type="submit" variant="hero" size="lg" className="w-full" disabled={isLoading}>
+                {isLoading ? 'Loading...' : (isLogin ? 'Sign In' : 'Create Account')}
               </Button>
             </form>
 
