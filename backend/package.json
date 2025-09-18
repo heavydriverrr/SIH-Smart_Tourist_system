@@ -1,0 +1,33 @@
+{
+  "name": "smart-wanderer-admin-backend",
+  "version": "1.0.0",
+  "description": "Admin backend for Smart Wanderer Tourist Safety App",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "build": "echo 'No build step required for Node.js backend'",
+    "seed": "node scripts/seed-admin.js"
+  },
+  "keywords": ["tourism", "safety", "admin", "backend", "express"],
+  "author": "Smart Wanderer Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "dotenv": "^16.3.1",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "express-rate-limit": "^7.1.5",
+    "express-validator": "^7.0.1",
+    "socket.io": "^4.7.4",
+    "@supabase/supabase-js": "^2.57.4",
+    "winston": "^3.11.0",
+    "compression": "^1.7.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

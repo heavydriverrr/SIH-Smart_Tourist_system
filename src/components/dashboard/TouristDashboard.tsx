@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,7 @@ import {
 import SOSButton from './SOSButton';
 import MapComponent from './MapComponent';
 import DigitalIDCard from './DigitalIDCard';
+import { useLocationService } from '@/hooks/useLocationService';
 
 interface TouristDashboardProps {
   user: {
@@ -44,6 +45,24 @@ const TouristDashboard: React.FC<TouristDashboardProps> = ({ user, onLogout }) =
     { id: 1, type: 'info', message: 'Welcome to Assam! Check local guidelines.', time: '2 min ago' },
     { id: 2, type: 'warning', message: 'High tourist area detected. Stay alert.', time: '1 hour ago' },
   ]);
+
+  // Initialize location service
+  const locationService = useLocationService({
+    userId: user.id,
+    enabled: true,
+    updateInterval: 30000 // Update every 30 seconds
+  });
+
+  // Update location when GPS location changes
+  useEffect(() => {
+    if (locationService.currentLocation) {
+      setCurrentLocation({
+        lat: locationService.currentLocation.latitude,
+        lng: locationService.currentLocation.longitude,
+        address: locationService.currentLocation.address || 'Unknown location'
+      });
+    }
+  }, [locationService.currentLocation]);
 
   const handleSOSPress = () => {
     // Simulate SOS alert
@@ -151,10 +170,23 @@ const TouristDashboard: React.FC<TouristDashboardProps> = ({ user, onLogout }) =
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center space-x-2 text-sm">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span>{currentLocation.address}</span>
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center space-x-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  <span>{currentLocation.address}</span>
+                </div>
+                {locationService.isTracking && (
+                  <div className="flex items-center space-x-1 text-xs text-green-600">
+                    <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span>Live</span>
+                  </div>
+                )}
               </div>
+              {locationService.lastUpdate && (
+                <p className="text-xs text-muted-foreground">
+                  Last update: {locationService.lastUpdate.toLocaleTimeString()}
+                </p>
+              )}
               <div className="h-48 rounded-lg overflow-hidden">
                 <MapComponent 
                   center={[currentLocation.lng, currentLocation.lat]}
