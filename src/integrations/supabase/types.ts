@@ -14,7 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      emergency_alerts: {
+        Row: {
+          created_at: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          message: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          message?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          message?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          digital_id: string | null
+          emergency_contact: string | null
+          id: string
+          is_verified: boolean | null
+          name: string
+          phone: string | null
+          safety_score: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          digital_id?: string | null
+          emergency_contact?: string | null
+          id: string
+          is_verified?: boolean | null
+          name: string
+          phone?: string | null
+          safety_score?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          digital_id?: string | null
+          emergency_contact?: string | null
+          id?: string
+          is_verified?: boolean | null
+          name?: string
+          phone?: string | null
+          safety_score?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
