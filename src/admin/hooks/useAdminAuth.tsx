@@ -107,6 +107,12 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
   const login = async (email: string, password: string) => {
     try {
       console.log('🔐 Attempting admin login...', { email });
+      console.log('🌐 Environment check:', {
+        VITE_API_URL: import.meta.env.VITE_API_URL,
+        VITE_FALLBACK_TO_DEMO: import.meta.env.VITE_FALLBACK_TO_DEMO,
+        NODE_ENV: import.meta.env.NODE_ENV,
+        MODE: import.meta.env.MODE
+      });
       
       // Demo credentials - always try this first for reliability
       if (email === 'admin@smartwanderer.com' && password === 'admin123456') {

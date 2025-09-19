@@ -6,25 +6,36 @@ To ensure the admin portal works correctly on Vercel deployment, make sure the f
 
 ### Required Environment Variables
 
+These **MUST** be set in your Vercel Dashboard (Project Settings → Environment Variables):
+
 1. **VITE_MAPBOX_ACCESS_TOKEN**
    ```
    pk.eyJ1IjoienByYXRoYW14IiwiYSI6ImNtZnIyd2xoYzA0Ymwya3NkejFqemhkMW0ifQ.Da77w6Dyml0JEuHHc_RQsA
    ```
+   - Set for: `Production`, `Preview`, and `Development`
 
 2. **VITE_API_URL** (Backend API)
    ```
    https://smart-wanderer-backend.onrender.com
    ```
+   - Set for: `Production`, `Preview`, and `Development`
 
 3. **VITE_WS_URL** (WebSocket URL)
    ```
    wss://smart-wanderer-backend.onrender.com
    ```
+   - Set for: `Production`, `Preview`, and `Development`
 
 4. **VITE_FALLBACK_TO_DEMO** (Hybrid Mode)
    ```
    true
    ```
+   - Set for: `Production`, `Preview`, and `Development`
+
+### ⚠️ Important Notes:
+- Environment variables in `.env.production` are **NOT** automatically used by Vercel
+- You **MUST** set these variables manually in the Vercel Dashboard
+- After setting environment variables, you **MUST** redeploy the application
 
 ## Admin Login Credentials
 
