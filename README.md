@@ -1,8 +1,11 @@
-# TrustTour - Secure Travel Management System
+# 🌍 TrustTour - Tourist Safety App
 
-🛡️ **Your Trusted Travel Safety Companion**
+> **A comprehensive tourist safety and monitoring application with real-time GPS tracking, emergency alerts, and administrative oversight.**
 
-TrustTour is an advanced tourist safety and travel management system featuring real-time monitoring, emergency response, and secure travel coordination.
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)]()
+[![Version](https://img.shields.io/badge/version-1.0.0-blue)]()
+[![License](https://img.shields.io/badge/license-MIT-green)]()
+[![Demo](https://img.shields.io/badge/demo-live-orange)](https://trusttourapp.vercel.app)
 
 ## 🌟 Live Demo
 
@@ -40,21 +43,24 @@ npm run dev
 npm run build
 ```
 
-## ✨ Features
+## 🎯 Features
 
-### 🏠 **Tourist Portal**
-- User registration and authentication
-- Digital tourist ID generation
-- Real-time location tracking
-- Emergency SOS button
-- Safety zone monitoring
+### 👥 **For Tourists**
+- 🗺️ **Interactive Safety Map** - Google Maps style interface with blue dot location
+- 📍 **Real-time GPS Tracking** - Continuous location monitoring with family sharing
+- 🚨 **Emergency SOS Button** - One-tap emergency alerts with GPS coordinates
+- 🛡️ **Safety Zones** - Visual indicators for safe/risky areas with geofencing
+- 🆔 **Digital Tourist ID** - Secure digital identification and verification
+- 📊 **Safety Score** - Dynamic safety rating based on location and behavior
+- 🔄 **Recenter Button** - Smooth animation to return to current location
 
-### 🛡️ **Admin Dashboard**
-- Real-time tourist monitoring
-- Emergency alert management
-- Live location tracking
-- Analytics and reporting
-- Activity logging
+### 👮 **For Administrators**
+- 📊 **Live Dashboard** - Real-time monitoring of all active tourists
+- 🗺️ **Tourist Tracking** - Live location viewing with activity status
+- ⚠️ **Alert Management** - Emergency alert handling and response coordination
+- 📈 **Analytics** - Safety statistics, usage metrics, and trend analysis
+- 👥 **User Management** - Tourist profiles, safety scores, and verification
+- 🔔 **Real-time Notifications** - Instant alerts via WebSocket connections
 
 ### 🔧 **Technical Features**
 - **Frontend**: React 18 + TypeScript + Tailwind CSS
