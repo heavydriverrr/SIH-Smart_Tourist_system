@@ -2,8 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { AlertTriangle, RefreshCw, User, Shield, MapPin, Eye } from 'lucide-react';
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
+import '@/styles/mapbox-custom.css';
 import { touristAPI, getSocket } from '@/services/adminApi';
 
 interface HighRiskZone {
@@ -37,13 +39,13 @@ interface TouristLocation {
 const AdminMap: React.FC = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<any>(null);
-  const [mapboxToken, setMapboxToken] = useState('');
-  const [showTokenInput, setShowTokenInput] = useState(true);
   const [locations, setLocations] = useState<TouristLocation[]>([]);
   const [selectedTourist, setSelectedTourist] = useState<TouristLocation | null>(null);
   const [selectedRiskZone, setSelectedRiskZone] = useState<HighRiskZone | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [mapError, setMapError] = useState<string | null>(null);
+  const [isLoadingMap, setIsLoadingMap] = useState(false);
   const markersRef = useRef<any[]>([]);
 
   // Enhanced high-risk zones for admin monitoring
@@ -203,53 +205,91 @@ const AdminMap: React.FC = () => {
   ];
 
   useEffect(() => {
-    // Check for saved token in localStorage first
-    const savedToken = localStorage.getItem('admin_mapbox_token');
-    // Fall back to environment variable
+    if (!mapContainer.current) return;
+    
+    // Get token from multiple sources (same as user map)
     const envToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+    const savedToken = localStorage.getItem('mapbox_token');
+    // Multiple fallback tokens to try
+    const fallbackTokens = [
+      'pk.eyJ1IjoienByYXRoYW14IiwiYTr6ImNtZnIyd2xoYzA0Ymwya3NkejFqemhkMW0ifQ.Da77w6Dyml0JEuHHc_RQsA', // Full token
+      'pk.eyJ1IjoienByYXRoYW14IiwiYTr6ImNtZnIyd2xoYzA0Ymwya3NkejFqemhkMW0ifQ.Da77w6Dyml0JEuHHc_RQs'   // Vercel version
+    ];
     
-    console.log('AdminMap: Checking tokens...');
-    console.log('Saved token:', savedToken ? 'Found' : 'Not found');
-    console.log('Env token:', envToken);
+    console.log('🗺️ AdminMap: Initializing Mapbox...');
+    console.log('Environment token available:', !!envToken);
+    console.log('Environment token length:', envToken?.length || 0);
+    console.log('Environment token preview:', envToken ? envToken.substring(0, 20) + '...' : 'undefined');
+    console.log('Environment token starts with pk:', envToken?.startsWith('pk.') || false);
+    console.log('Running in production:', import.meta.env.PROD);
     
-    if (savedToken && savedToken.length > 10) {
-      console.log('Using saved admin token');
-      setMapboxToken(savedToken);
-      initializeMap(savedToken);
-    } else if (envToken && envToken.startsWith('pk.') && envToken.length > 50) {
-      console.log('Using environment token for admin');
-      setMapboxToken(envToken);
-      initializeMap(envToken);
+    let tokenToUse = '';
+    
+    // Priority: environment token > saved token > fallback tokens
+    if (envToken && envToken.trim().length > 50 && envToken.trim().startsWith('pk.')) {
+      tokenToUse = envToken.trim();
+      console.log('✅ AdminMap using environment token');
+    } else if (savedToken && savedToken.length > 50 && savedToken.startsWith('pk.')) {
+      tokenToUse = savedToken;
+      console.log('✅ AdminMap using saved token');
     } else {
-      console.log('No valid admin token found, showing input form');
+      // Try fallback tokens
+      for (let i = 0; i < fallbackTokens.length; i++) {
+        const fallbackToken = fallbackTokens[i];
+        if (fallbackToken && fallbackToken.length > 50 && fallbackToken.startsWith('pk.')) {
+          tokenToUse = fallbackToken;
+          console.log(`✅ AdminMap using fallback token ${i + 1} (${fallbackToken.length} chars)`);
+          break;
+        }
+      }
     }
+    
+    if (!tokenToUse) {
+      console.error('❌ AdminMap: No valid Mapbox token found');
+      setMapError('Mapbox access token is required for admin map.');
+      setIsLoadingMap(false);
+      return;
+    }
+    
+    // Initialize map with valid token
+    setIsLoadingMap(true);
+    setMapError(null);
+    initializeMap(tokenToUse);
   }, []);
 
-  const initializeMap = async (token: string) => {
-    if (!mapContainer.current || !token) return;
+  const initializeMap = (token: string) => {
+    if (!mapContainer.current || !token) {
+      setIsLoadingMap(false);
+      return;
+    }
 
     try {
-      // Dynamic import for mapbox-gl
-      const mapboxgl = await import('mapbox-gl');
+      console.log('🗺️ AdminMap initializing with token:', token.substring(0, 20) + '...');
       
       // Set the access token
-      (mapboxgl as any).accessToken = token;
+      mapboxgl.accessToken = token;
+      
+      // Make mapboxgl available globally
+      (window as any).mapboxgl = mapboxgl;
 
-      // Initialize the admin map with satellite view
+      // Initialize the admin map with streets view for better compatibility
       const newMap = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/satellite-streets-v12',
+        style: 'mapbox://styles/mapbox/streets-v12',
         center: [91.7362, 26.1445], // Guwahati coordinates
         zoom: 11,
-        pitch: 30,
+        pitch: 0,
+        maxZoom: 18,
+        minZoom: 8,
+        attributionControl: true
       });
 
-      // Add enhanced admin controls
-      newMap.addControl(new mapboxgl.NavigationControl(), 'top-right');
-      newMap.addControl(new mapboxgl.FullscreenControl(), 'top-right');
-      newMap.addControl(new mapboxgl.ScaleControl(), 'bottom-left');
-
+      // Handle map load success
       newMap.on('load', () => {
+        console.log('✅ AdminMap loaded successfully!');
+        setIsLoadingMap(false);
+        setMapError(null);
+        
         // Add high-risk zone geofences
         addHighRiskZones(newMap);
         
@@ -259,16 +299,41 @@ const AdminMap: React.FC = () => {
         // Start real-time updates
         startRealTimeUpdates();
       });
+      
+      // Handle map load errors
+      newMap.on('error', (e) => {
+        console.error('❌ AdminMap error details:', e);
+        console.log('Error type:', e.error?.message || 'Unknown error');
+        console.log('Token being used:', token);
+        
+        let errorMessage = 'Failed to load admin map tiles.';
+        
+        if (e.error?.message?.includes('Unauthorized') || e.error?.status === 401) {
+          errorMessage = 'Invalid Mapbox token for admin map.';
+        } else if (e.error?.message?.includes('rate limit') || e.error?.status === 429) {
+          errorMessage = 'Mapbox rate limit exceeded.';
+        } else if (e.error?.message?.includes('network') || e.error?.status === 0) {
+          errorMessage = 'Network error loading admin map.';
+        }
+        
+        setMapError(`${errorMessage} (Status: ${e.error?.status || 'unknown'})`);
+        setIsLoadingMap(false);
+      });
+
+      // Add enhanced admin controls
+      newMap.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      newMap.addControl(new mapboxgl.FullscreenControl(), 'top-right');
+      newMap.addControl(new mapboxgl.ScaleControl(), 'bottom-left');
 
       map.current = newMap;
-      setShowTokenInput(false);
       
       // Save token
-      localStorage.setItem('admin_mapbox_token', token);
+      localStorage.setItem('mapbox_token', token);
 
     } catch (error) {
-      console.error('Error initializing admin map:', error);
-      alert('Error loading admin map. Please check your Mapbox token.');
+      console.error('❌ AdminMap initialization failed:', error);
+      setMapError(`Failed to initialize admin map: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setIsLoadingMap(false);
     }
   };
   
@@ -454,94 +519,25 @@ const AdminMap: React.FC = () => {
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
 
-    // Enhanced markers for each tourist with risk-based styling
+    // Simple blue dot markers for all tourists (like user location)
     touristLocations.forEach((location, index) => {
-      const isHighRisk = location.tourist.safety_score < 60;
-      const isMediumRisk = location.tourist.safety_score < 80 && location.tourist.safety_score >= 60;
-      
+      // Create blue dot marker similar to user location in user map
       const el = document.createElement('div');
       el.className = 'admin-tourist-marker';
       el.style.cssText = `
-        width: 50px;
-        height: 50px;
+        width: 16px;
+        height: 16px;
         border-radius: 50%;
-        background: ${getSafetyColor(location.tourist.safety_score)};
-        border: 4px solid white;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        background: #4285F4;
+        border: 3px solid white;
+        box-shadow: 0 2px 8px rgba(66, 133, 244, 0.4);
         cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.3s ease;
+        transition: all 0.2s ease;
         position: relative;
         z-index: ${100 + index};
-        ${isHighRisk ? 'animation: emergency-pulse 1.5s infinite;' : ''}
       `;
 
-      // Add tourist info display
-      const touristInfo = document.createElement('div');
-      touristInfo.style.cssText = `
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.8);
-      `;
-      
-      touristInfo.innerHTML = `
-        <div style="font-size: 18px; margin-bottom: -2px;">👤</div>
-        <div style="font-size: 8px; font-weight: bold;">${location.tourist.safety_score}%</div>
-      `;
-
-      el.appendChild(touristInfo);
-
-      // Add verification badge
-      if (location.tourist.is_verified) {
-        const badge = document.createElement('div');
-        badge.style.cssText = `
-          position: absolute;
-          top: -2px;
-          right: -2px;
-          width: 16px;
-          height: 16px;
-          background: #10B981;
-          border: 2px solid white;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 10px;
-          color: white;
-        `;
-        badge.innerHTML = '✓';
-        el.appendChild(badge);
-      }
-
-      // Enhanced emergency pulse animation
-      if (isHighRisk && !document.getElementById('emergency-pulse-style')) {
-        const style = document.createElement('style');
-        style.id = 'emergency-pulse-style';
-        style.textContent = `
-          @keyframes emergency-pulse {
-            0% { 
-              transform: scale(1);
-              box-shadow: 0 4px 15px rgba(0,0,0,0.3), 0 0 0 0 rgba(239, 68, 68, 0.7);
-            }
-            50% { 
-              transform: scale(1.05);
-              box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 0 0 15px rgba(239, 68, 68, 0);
-            }
-            100% { 
-              transform: scale(1);
-              box-shadow: 0 4px 15px rgba(0,0,0,0.3), 0 0 0 0 rgba(239, 68, 68, 0);
-            }
-          }
-        `;
-        document.head.appendChild(style);
-      }
-
-      // Hover effects
+      // Add hover effect
       el.addEventListener('mouseenter', () => {
         el.style.transform = 'scale(1.2)';
         el.style.zIndex = '1000';
@@ -552,75 +548,56 @@ const AdminMap: React.FC = () => {
         el.style.zIndex = `${100 + index}`;
       });
 
-      // Enhanced popup with admin details
-      const popup = new (map.current.constructor as any).Popup({
-        offset: 30,
+      // Simple popup with tourist info
+      const popup = new mapboxgl.Popup({
+        offset: 15,
         closeButton: true,
         closeOnClick: false,
-        maxWidth: '300px'
+        maxWidth: '280px'
       }).setHTML(`
-        <div class="admin-tourist-popup p-4">
-          <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center space-x-2">
-              <strong class="text-lg">${location.tourist.name}</strong>
-              ${location.tourist.is_verified ? 
-                '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">Verified</span>' : 
-                '<span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded">Unverified</span>'
-              }
-            </div>
+        <div class="p-3">
+          <div class="flex items-center justify-between mb-2">
+            <strong class="text-sm">${location.tourist.name}</strong>
+            ${location.tourist.is_verified ? 
+              '<span class="bg-green-100 text-green-800 text-xs px-1 py-0.5 rounded">Verified</span>' : 
+              '<span class="bg-red-100 text-red-800 text-xs px-1 py-0.5 rounded">Unverified</span>'
+            }
           </div>
           
-          <div class="space-y-2 text-sm">
+          <div class="space-y-1 text-xs">
             <div class="flex justify-between">
-              <span class="text-gray-600">Digital ID:</span>
-              <span class="font-mono font-bold">${location.tourist.digital_id}</span>
+              <span class="text-gray-600">ID:</span>
+              <span class="font-mono">${location.tourist.digital_id}</span>
             </div>
             
             <div class="flex justify-between">
               <span class="text-gray-600">Safety Score:</span>
-              <span class="px-2 py-1 rounded text-xs font-bold" style="
-                background: ${location.tourist.safety_score >= 80 ? '#DCFCE7' : location.tourist.safety_score >= 60 ? '#FEF3C7' : '#FEE2E2'};
-                color: ${location.tourist.safety_score >= 80 ? '#166534' : location.tourist.safety_score >= 60 ? '#92400E' : '#991B1B'};
-              ">${location.tourist.safety_score}%</span>
+              <span class="font-bold" style="color: ${getSafetyColor(location.tourist.safety_score)}">
+                ${location.tourist.safety_score}%
+              </span>
             </div>
             
-            <div class="border-t pt-2 mt-2">
-              <div class="text-gray-600 text-xs mb-1">Current Location:</div>
-              <div class="text-xs">${location.address}</div>
+            <div class="pt-1 border-t">
+              <div class="text-gray-600 mb-1">Location:</div>
+              <div class="text-gray-800">${location.address}</div>
             </div>
             
-            <div class="flex justify-between text-xs text-gray-500">
-              <span>Last Update:</span>
+            <div class="flex justify-between text-gray-500">
+              <span>Updated:</span>
               <span>${getTimeSince(location.updated_at)}</span>
             </div>
-            
-            <div class="flex justify-between text-xs text-gray-500">
-              <span>GPS Accuracy:</span>
-              <span>±${location.accuracy}m</span>
-            </div>
-            
-            ${isHighRisk ? `
-              <div class="bg-red-50 border border-red-200 rounded p-2 mt-2">
-                <div class="flex items-center space-x-1 text-red-800">
-                  <span class="text-red-600">⚠</span>
-                  <span class="text-xs font-bold">HIGH RISK ALERT</span>
-                </div>
-                <div class="text-xs text-red-600 mt-1">Tourist requires immediate attention</div>
-              </div>
-            ` : ''}
           </div>
         </div>
       `);
 
-      const marker = new (map.current.constructor as any).Marker(el)
+      const marker = new mapboxgl.Marker(el)
         .setLngLat([location.longitude, location.latitude])
         .setPopup(popup)
         .addTo(map.current);
 
-      // Handle marker click for admin selection
+      // Handle marker click
       el.addEventListener('click', () => {
         setSelectedTourist(location);
-        popup.addTo(map.current);
       });
 
       markersRef.current.push(marker);
@@ -628,7 +605,7 @@ const AdminMap: React.FC = () => {
 
     // Enhanced bounds fitting with padding
     if (touristLocations.length > 0) {
-      const bounds = new (map.current.constructor as any).LngLatBounds();
+      const bounds = new mapboxgl.LngLatBounds();
       touristLocations.forEach(location => {
         bounds.extend([location.longitude, location.latitude]);
       });
@@ -688,59 +665,38 @@ const AdminMap: React.FC = () => {
     }
   };
 
-  if (showTokenInput) {
+  // Show loading state for map initialization
+  if (isLoadingMap) {
     return (
-      <Card className="p-6 space-y-4">
-        <div className="text-center space-y-3">
-          <div className="flex items-center justify-center space-x-2">
-            <Shield className="h-12 w-12 text-red-500" />
-            <Eye className="h-8 w-8 text-blue-500" />
-          </div>
-          <h3 className="text-lg font-semibold">Admin Map Dashboard</h3>
-          <p className="text-sm text-muted-foreground">
-            Enter your Mapbox token to access the enhanced admin monitoring system
-          </p>
+      <div className="relative h-full w-full rounded-lg bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Admin Map</h2>
+          <p className="text-gray-600">Initializing tourist monitoring system...</p>
         </div>
-        
-        <form onSubmit={handleTokenSubmit} className="space-y-3">
-          <Input
-            type="text"
-            placeholder="Mapbox Public Token (pk.ey...)"
-            value={mapboxToken}
-            onChange={(e) => setMapboxToken(e.target.value)}
-            className="font-mono text-xs"
-          />
-          <Button type="submit" variant="hero" className="w-full">
-            <Shield className="h-4 w-4 mr-2" />
-            Initialize Admin Map
+      </div>
+    );
+  }
+  
+  // Show error state for map initialization
+  if (mapError) {
+    return (
+      <div className="relative h-full w-full rounded-lg bg-red-50 flex items-center justify-center">
+        <div className="text-center p-6">
+          <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-red-900 mb-2">Admin Map Error</h2>
+          <p className="text-red-700 mb-4">{mapError}</p>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setMapError(null);
+              window.location.reload();
+            }}
+          >
+            Reload Page
           </Button>
-        </form>
-        
-        <div className="text-xs text-muted-foreground space-y-2">
-          <p>
-            Get your free Mapbox token at{' '}
-            <a 
-              href="https://mapbox.com" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              mapbox.com
-            </a>
-          </p>
-          <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-            <h4 className="font-semibold text-red-900 mb-2">🔒 Admin Features:</h4>
-            <ul className="text-red-800 space-y-1">
-              <li>• Real-time monitoring of all {mockTouristData.length} tourists</li>
-              <li>• High-risk geofence zones with alert system</li>
-              <li>• Emergency pulse notifications for critical safety scores</li>
-              <li>• Satellite imagery and enhanced admin controls</li>
-              <li>• Detailed tourist profiles with verification status</li>
-              <li>• Live location tracking with accuracy indicators</li>
-            </ul>
-          </div>
         </div>
-      </Card>
+      </div>
     );
   }
 
@@ -805,7 +761,20 @@ const AdminMap: React.FC = () => {
         </Button>
       </div>
 
-      {/* Loading Overlay */}
+      {/* Map Loading Overlay */}
+      {isLoadingMap && (
+        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm rounded-lg flex items-center justify-center z-50">
+          <div className="text-center space-y-3">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Loading Admin Map...</p>
+              <p className="text-xs text-muted-foreground">Initializing tourist monitoring system</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Tourist Data Loading Overlay */}
       {loading && (
         <div className="absolute inset-0 bg-white/90 flex items-center justify-center rounded-lg">
           <div className="text-center">
