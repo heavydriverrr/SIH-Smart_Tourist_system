@@ -15,6 +15,7 @@ interface AdminAuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
+  connectionStatus: 'demo' | 'backend' | 'unknown';
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
@@ -26,6 +27,7 @@ interface AdminAuthProviderProps {
 export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }) => {
   const [admin, setAdmin] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [connectionStatus, setConnectionStatus] = useState<'demo' | 'backend' | 'unknown'>('unknown');
 
   const isAuthenticated = !!admin;
 
@@ -58,6 +60,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
           if (token.startsWith('demo-token-')) {
             console.log('🎭 Using demo admin credentials - no verification needed');
             if (isMounted) {
+              setConnectionStatus('demo');
               setLoading(false);
             }
             return;
@@ -76,9 +79,11 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
             if (response.success && isMounted) {
               console.log('✅ Token verification successful');
               setAdmin(response.admin || parsedAdmin);
+              setConnectionStatus('backend');
               initializeSocket();
             } else {
               console.log('⚠️ Token verification failed, but keeping stored auth');
+              setConnectionStatus('demo');
               // Don't clear auth - keep using stored data
             }
           } catch (error) {
@@ -157,6 +162,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
                 return adminData;
               });
               
+              setConnectionStatus('backend');
               initializeSocket();
               console.log('✅ Backend admin login successful!');
               return;
@@ -190,6 +196,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
           return demoAdmin;
         });
         
+        setConnectionStatus('demo');
         console.log('✅ Demo admin login successful! State update initiated.');
         return;
       }
@@ -277,6 +284,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
     login,
     logout,
     isAuthenticated,
+    connectionStatus,
   };
 
   return (

@@ -42,7 +42,7 @@ const AdminDashboard: React.FC = () => {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
 
-  const { admin, logout } = useAdminAuth();
+  const { admin, logout, connectionStatus } = useAdminAuth();
 
   useEffect(() => {
     loadDashboardData();
@@ -138,6 +138,12 @@ const AdminDashboard: React.FC = () => {
             </div>
             
             <div className="flex items-center space-x-4">
+              <Badge 
+                variant={connectionStatus === 'backend' ? 'default' : 'secondary'} 
+                className="text-sm"
+              >
+                {connectionStatus === 'backend' ? '🌐 Live Backend' : '🎭 Demo Mode'}
+              </Badge>
               <Badge variant="outline" className="text-sm">
                 {admin?.role?.replace('_', ' ').toUpperCase()}
               </Badge>

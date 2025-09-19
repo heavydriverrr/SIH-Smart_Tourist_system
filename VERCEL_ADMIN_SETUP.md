@@ -6,7 +6,16 @@ To ensure the admin portal works correctly on Vercel deployment, make sure the f
 
 ### Required Environment Variables
 
-These **MUST** be set in your Vercel Dashboard (Project Settings → Environment Variables):
+## 🛠️ Step-by-Step Setup Instructions
+
+### Step 1: Access Vercel Dashboard
+1. Go to [https://vercel.com](https://vercel.com)
+2. Navigate to your project
+3. Click **Settings** tab
+4. Click **Environment Variables** in the sidebar
+
+### Step 2: Add Environment Variables
+Add these **EXACT** variables (copy-paste to avoid typos):
 
 1. **VITE_MAPBOX_ACCESS_TOKEN**
    ```
@@ -32,10 +41,17 @@ These **MUST** be set in your Vercel Dashboard (Project Settings → Environment
    ```
    - Set for: `Production`, `Preview`, and `Development`
 
-### ⚠️ Important Notes:
+### Step 3: Deploy After Setting Variables
+1. After adding **ALL** environment variables
+2. Go to **Deployments** tab in Vercel
+3. Click **Redeploy** on the latest deployment
+4. **OR** trigger a new deployment by pushing to your repository
+
+### ⚠️ Critical Notes:
 - Environment variables in `.env.production` are **NOT** automatically used by Vercel
 - You **MUST** set these variables manually in the Vercel Dashboard
 - After setting environment variables, you **MUST** redeploy the application
+- Set variables for **ALL** three environments: Production, Preview, Development
 
 ## Admin Login Credentials
 
