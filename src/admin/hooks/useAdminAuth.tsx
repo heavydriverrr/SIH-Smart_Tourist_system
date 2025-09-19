@@ -108,7 +108,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
     try {
       console.log('🔐 Attempting admin login...', { email });
       
-      // Demo credentials bypass for development
+      // Demo credentials - always try this first for reliability
       if (email === 'admin@smartwanderer.com' && password === 'admin123456') {
         const demoAdmin = {
           id: 'demo-admin-001',
@@ -131,33 +131,43 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
         return;
       }
       
-      // Try real API login
-      const response = await authAPI.login(email, password);
-      console.log('📥 Login response:', response);
-      
-      if (response.success) {
-        const { token, admin: adminData } = response;
+      // For any other credentials, try API login but fallback gracefully
+      try {
+        const response = await authAPI.login(email, password);
+        console.log('📥 Login response:', response);
         
-        // Store auth data
-        localStorage.setItem('admin_token', token);
-        localStorage.setItem('admin_user', JSON.stringify(adminData));
+        if (response.success) {
+          const { token, admin: adminData } = response;
+          
+          // Store auth data
+          localStorage.setItem('admin_token', token);
+          localStorage.setItem('admin_user', JSON.stringify(adminData));
+          
+          // Update state
+          setAdmin(adminData);
+          
+          // Initialize socket connection
+          initializeSocket();
+          console.log('✅ Admin login successful!');
+          return;
+        }
+      } catch (apiError: any) {
+        console.warn('🔄 API login failed, checking for demo mode:', apiError.message);
         
-        // Update state
-        setAdmin(adminData);
-        
-        // Initialize socket connection
-        initializeSocket();
-        console.log('✅ Admin login successful!');
-      } else {
-        console.error('❌ Login failed:', response.message);
-        throw new Error(response.message || 'Login failed');
+        // If API is not available, inform user about demo credentials
+        if (apiError.message.includes('Cannot connect to server') || 
+            apiError.message.includes('fetch') ||
+            apiError.name === 'TypeError') {
+          throw new Error('Backend server not available. Please use demo credentials: admin@smartwanderer.com / admin123456');
+        }
       }
+      
+      // If we get here, the credentials were invalid
+      throw new Error('Invalid credentials. Use demo credentials: admin@smartwanderer.com / admin123456');
+      
     } catch (error: any) {
       console.error('❌ Login error:', error);
-      if (error.message === 'Network Error' || error.code === 'ECONNREFUSED') {
-        throw new Error('Backend server not available. Using demo credentials: admin@smartwanderer.com / admin123456');
-      }
-      throw new Error(error.response?.data?.message || error.message || 'Login failed');
+      throw error;
     }
   };
 

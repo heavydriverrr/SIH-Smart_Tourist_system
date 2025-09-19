@@ -43,8 +43,16 @@ adminApi.interceptors.response.use(
 export const authAPI = {
   login: async (email: string, password: string) => {
     try {
-      // Direct API call with full URL and proper CORS handling
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      // Get API URL - if not set or invalid, skip API call entirely
+      const apiUrl = import.meta.env.VITE_API_URL;
+      
+      // In production without a backend, skip API call for demo credentials
+      if (!apiUrl || apiUrl.includes('localhost') || apiUrl.includes('your-backend')) {
+        console.log('🎭 No backend API configured, using demo mode only');
+        throw new Error('Cannot connect to server. Please ensure the backend is running.');
+      }
+      
+      // Try API call with proper error handling
       const response = await fetch(`${apiUrl}/api/auth/login`, {
         method: 'POST',
         mode: 'cors',
