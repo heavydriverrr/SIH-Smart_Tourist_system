@@ -64,11 +64,11 @@ const AdminLogin: React.FC = () => {
       await login(email, password);
       console.log('✅ Login successful, waiting for auth state change');
       
-      // Add a small delay to check if auth state is properly updated
-      setTimeout(() => {
-        console.log('🔄 Checking auth state after login delay...');
-        console.log('Current isAuthenticated:', isAuthenticated);
-      }, 200);
+      // Add a small delay to ensure state is properly updated before redirect
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      console.log('🔄 Checking auth state after login delay...');
+      console.log('Current isAuthenticated:', isAuthenticated);
       
       // Don't manually navigate - let the auth state change trigger the redirect
     } catch (error: any) {

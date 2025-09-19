@@ -34,30 +34,38 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
     let isMounted = true;
     
     const initAuth = async () => {
+      console.log('🔄 Initializing auth state...');
       const token = localStorage.getItem('admin_token');
       const savedAdmin = localStorage.getItem('admin_user');
+      
+      console.log('💾 Auth data check:', { 
+        hasToken: !!token, 
+        hasSavedAdmin: !!savedAdmin,
+        tokenType: token?.startsWith('demo-token-') ? 'demo' : 'real'
+      });
 
       if (token && savedAdmin) {
         try {
           const parsedAdmin = JSON.parse(savedAdmin);
           
+          // Always set the admin immediately to prevent race conditions
+          if (isMounted) {
+            console.log('📞 Setting admin from stored data:', parsedAdmin.email);
+            setAdmin(parsedAdmin);
+          }
+          
           // Check if it's a demo token - if so, skip API verification
           if (token.startsWith('demo-token-')) {
-            console.log('🎭 Using demo admin credentials');
+            console.log('🎭 Using demo admin credentials - no verification needed');
             if (isMounted) {
-              setAdmin(parsedAdmin);
               setLoading(false);
             }
             return;
           }
           
-          // Set admin immediately from stored data
-          if (isMounted) {
-            setAdmin(parsedAdmin);
-          }
-          
-          // Try to verify real token with timeout - but don't clear auth on failure
+          // For real tokens, try verification but don't clear auth on failure
           try {
+            console.log('🔐 Attempting to verify real token...');
             const verificationPromise = authAPI.verify();
             const timeoutPromise = new Promise((resolve) => 
               setTimeout(() => resolve({ success: false }), 3000)
@@ -66,37 +74,46 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
             const response = await Promise.race([verificationPromise, timeoutPromise]) as any;
             
             if (response.success && isMounted) {
+              console.log('✅ Token verification successful');
               setAdmin(response.admin || parsedAdmin);
               initializeSocket();
+            } else {
+              console.log('⚠️ Token verification failed, but keeping stored auth');
+              // Don't clear auth - keep using stored data
             }
-            // Don't clear auth on verification failure - keep using stored data
           } catch (error) {
-            console.warn('Token verification failed, keeping stored auth:', error);
+            console.warn('⚠️ Token verification error, keeping stored auth:', error);
             // Keep the stored admin data even if verification fails
           }
         } catch (error) {
-          console.error('Failed to parse stored admin data:', error);
+          console.error('❌ Failed to parse stored admin data:', error);
           localStorage.removeItem('admin_token');
           localStorage.removeItem('admin_user');
           if (isMounted) {
             setAdmin(null);
           }
         }
+      } else {
+        console.log('🚫 No stored auth data found');
       }
       
       if (isMounted) {
         setLoading(false);
+        console.log('✅ Auth initialization complete');
       }
     };
 
     // Set timeout to prevent infinite loading
     const loadingTimeout = setTimeout(() => {
       if (isMounted) {
+        console.log('⏰ Auth initialization timeout reached');
         setLoading(false);
       }
-    }, 2000); // Reduced timeout
+    }, 1000); // Reduced timeout to prevent delays
 
-    initAuth().finally(() => clearTimeout(loadingTimeout));
+    initAuth().finally(() => {
+      clearTimeout(loadingTimeout);
+    });
     
     return () => {
       isMounted = false;
@@ -114,9 +131,43 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
         MODE: import.meta.env.MODE
       });
       
-      // Demo credentials - always try this first for reliability
+      // Check if we have a valid API URL for backend authentication
+      const hasValidApiUrl = import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('your-backend');
+      
+      // Demo credentials - try backend first if available, otherwise use demo mode
       if (email === 'admin@smartwanderer.com' && password === 'admin123456') {
-        console.log('🎭 Setting up demo admin...');
+        console.log('🎭 Demo credentials detected');
+        
+        // If we have a valid API URL, try backend first
+        if (hasValidApiUrl) {
+          console.log('🌐 Valid API URL found, trying backend authentication first...');
+          try {
+            const response = await authAPI.login(email, password);
+            console.log('📥 Backend login response:', response);
+            
+            if (response.success) {
+              const { token, admin: adminData } = response;
+              
+              console.log('💾 Storing backend admin data...');
+              localStorage.setItem('admin_token', token);
+              localStorage.setItem('admin_user', JSON.stringify(adminData));
+              
+              setAdmin(prevAdmin => {
+                console.log('🔄 Backend auth state update:', adminData);
+                return adminData;
+              });
+              
+              initializeSocket();
+              console.log('✅ Backend admin login successful!');
+              return;
+            }
+          } catch (backendError: any) {
+            console.warn('⚠️ Backend authentication failed, falling back to demo mode:', backendError.message);
+          }
+        }
+        
+        // Fallback to demo mode
+        console.log('🎭 Setting up demo admin fallback...');
         
         const demoAdmin = {
           id: 'demo-admin-001',
@@ -130,16 +181,12 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
         
         console.log('💾 Storing demo admin data...', { demoAdmin, demoToken });
         
-        // Store auth data first
         localStorage.setItem('admin_token', demoToken);
         localStorage.setItem('admin_user', JSON.stringify(demoAdmin));
         
-        console.log('📞 Updating admin state...');
-        
-        // Use a functional update to ensure state is properly updated
         setAdmin(prevAdmin => {
-          console.log('🔄 State updater called. Previous admin:', prevAdmin);
-          console.log('🔄 Setting new admin:', demoAdmin);
+          console.log('🔄 Demo state updater called. Previous admin:', prevAdmin?.email);
+          console.log('🔄 Setting new demo admin:', demoAdmin.email);
           return demoAdmin;
         });
         
