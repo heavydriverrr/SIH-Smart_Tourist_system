@@ -1,15 +1,12 @@
 {
-  "framework": "vite",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "routes": [
+  "rewrites": [
     {
-      "src": "/admin/(.*)",
-      "dest": "/index.html"
+      "source": "/admin/(.*)",
+      "destination": "/index.html"
     },
     {
-      "src": "/((?!api).*)",
-      "dest": "/index.html"
+      "source": "/((?!api|assets|_next|favicon.ico).*)",
+      "destination": "/index.html"
     }
   ]
 }
