@@ -3,6 +3,8 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { MapPin, Navigation, AlertTriangle, Shield, RefreshCw } from 'lucide-react';
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import '@/styles/mapbox-custom.css';
 
 interface MapComponentProps {
@@ -100,62 +102,60 @@ const MapComponent: React.FC<MapComponentProps> = ({ center, onLocationChange })
   ]);
 
   useEffect(() => {
-    // Try multiple token sources
+    if (!mapContainer.current) return;
+    
+    // Get token from environment variables
     const envToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
     const savedToken = localStorage.getItem('mapbox_token');
     
-    console.log('MapComponent: Checking for valid Mapbox token...');
-    console.log('Environment token exists:', !!envToken);
-    console.log('Saved token exists:', !!savedToken);
+    console.log('🗺️ MapComponent: Initializing Mapbox...');
+    console.log('Environment token available:', !!envToken);
+    console.log('Token length:', envToken?.length);
+    console.log('Token starts with pk:', envToken?.startsWith('pk.'));
     
     let tokenToUse = '';
     
-    // Priority: environment token > saved token > fallback
-    if (envToken && envToken.length > 50 && envToken.startsWith('pk.')) {
-      tokenToUse = envToken;
+    // Priority: environment token > saved token
+    if (envToken && envToken.trim().length > 50 && envToken.trim().startsWith('pk.')) {
+      tokenToUse = envToken.trim();
       console.log('✅ Using environment token');
     } else if (savedToken && savedToken.length > 50 && savedToken.startsWith('pk.')) {
       tokenToUse = savedToken;
       console.log('✅ Using saved token');
     } else {
-      // Show fallback static map instead of requiring token
-      console.log('⚠️ No valid Mapbox token found, showing fallback map');
+      console.error('❌ No valid Mapbox token found');
+      console.log('Environment token:', envToken ? envToken.substring(0, 20) + '...' : 'undefined');
+      setMapError('Mapbox access token is required. Please configure VITE_MAPBOX_ACCESS_TOKEN.');
       setIsLoadingMap(false);
-      setMapError(null);
-      setShowTokenInput(false);
-      initializeFallbackMap();
+      setShowTokenInput(true);
       return;
     }
     
-    if (tokenToUse) {
-      setMapboxToken(tokenToUse);
-      setShowTokenInput(false);
-      setIsLoadingMap(true);
-      setMapError(null);
-      initializeMap(tokenToUse);
-    }
+    // Initialize map with valid token
+    setMapboxToken(tokenToUse);
+    setIsLoadingMap(true);
+    setMapError(null);
+    setShowTokenInput(false);
+    initializeMap(tokenToUse);
   }, []);
 
-  const initializeMap = async (token: string) => {
+  const initializeMap = (token: string) => {
     if (!mapContainer.current || !token) {
       setIsLoadingMap(false);
       return;
     }
 
     try {
-      console.log('🗺️ Initializing map with token:', token.substring(0, 20) + '...');
+      console.log('🗺️ Initializing Mapbox with token:', token.substring(0, 20) + '...');
       
-      // Dynamic import for mapbox-gl
-      const mapboxgl = await import('mapbox-gl');
-      
-      // Set the access token on the default export
-      mapboxgl.default.accessToken = token;
+      // Set the access token
+      mapboxgl.accessToken = token;
       
       // Make mapboxgl available globally for marker functions
-      (window as any).mapboxgl = mapboxgl.default;
+      (window as any).mapboxgl = mapboxgl;
 
-      // Initialize the map with better error handling
-      const newMap = new mapboxgl.default.Map({
+      // Initialize the map
+      const newMap = new mapboxgl.Map({
         container: mapContainer.current,
         style: 'mapbox://styles/mapbox/satellite-streets-v12',
         center: center,
@@ -163,7 +163,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ center, onLocationChange })
         pitch: 0,
         maxZoom: 18,
         minZoom: 8,
-        attributionControl: true // Keep attribution but we'll style it
+        attributionControl: true
       });
       
       // Handle map load success
@@ -210,7 +210,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ center, onLocationChange })
       });
 
       // Add navigation controls
-      newMap.addControl(new mapboxgl.default.NavigationControl(), 'top-right');
+      newMap.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
       // Add risk zones and safe zones after the map loads
       newMap.on('load', () => {
@@ -354,7 +354,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ center, onLocationChange })
         setSelectedZone(zone);
         
         // Create popup
-        new (map.constructor as any).Popup()
+        new mapboxgl.Popup()
           .setLngLat([zone.lng, zone.lat])
           .setHTML(`
             <div class="p-3 min-w-[200px]">
