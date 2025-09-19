@@ -107,28 +107,42 @@ const MapComponent: React.FC<MapComponentProps> = ({ center, onLocationChange })
     // Get token from multiple sources
     const envToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
     const savedToken = localStorage.getItem('mapbox_token');
-    // Fallback token for production (your verified token)
-    const fallbackToken = 'pk.eyJ1IjoienByYXRoYW14IiwiYSI6ImNtZnIyd2xoYzA0Ymwya3NkejFqemhkMW0ifQ.Da77w6Dyml0JEuHHc_RQsA';
+    // Multiple fallback tokens to try
+    const fallbackTokens = [
+      'pk.eyJ1IjoienByYXRoYW14IiwiYTr6ImNtZnIyd2xoYzA0Ymwya3NkejFqemhkMW0ifQ.Da77w6Dyml0JEuHHc_RQsA', // Full token
+      'pk.eyJ1IjoienByYXRoYW14IiwiYTr6ImNtZnIyd2xoYzA0Ymwya3NkejFqemhkMW0ifQ.Da77w6Dyml0JEuHHc_RQs'   // Vercel version
+    ];
     
     console.log('🗺️ MapComponent: Initializing Mapbox...');
     console.log('Environment token available:', !!envToken);
     console.log('Environment token length:', envToken?.length || 0);
+    console.log('Environment token preview:', envToken ? envToken.substring(0, 20) + '...' : 'undefined');
     console.log('Environment token starts with pk:', envToken?.startsWith('pk.') || false);
     console.log('Running in production:', import.meta.env.PROD);
+    console.log('All env vars:', Object.keys(import.meta.env));
     
     let tokenToUse = '';
     
-    // Priority: environment token > saved token > fallback token
+    // Priority: environment token > saved token > fallback tokens
     if (envToken && envToken.trim().length > 50 && envToken.trim().startsWith('pk.')) {
       tokenToUse = envToken.trim();
       console.log('✅ Using environment token');
     } else if (savedToken && savedToken.length > 50 && savedToken.startsWith('pk.')) {
       tokenToUse = savedToken;
       console.log('✅ Using saved token');
-    } else if (fallbackToken && fallbackToken.length > 50 && fallbackToken.startsWith('pk.')) {
-      tokenToUse = fallbackToken;
-      console.log('✅ Using fallback token (for Vercel deployment)');
     } else {
+      // Try fallback tokens
+      for (let i = 0; i < fallbackTokens.length; i++) {
+        const fallbackToken = fallbackTokens[i];
+        if (fallbackToken && fallbackToken.length > 50 && fallbackToken.startsWith('pk.')) {
+          tokenToUse = fallbackToken;
+          console.log(`✅ Using fallback token ${i + 1} (${fallbackToken.length} chars)`);
+          break;
+        }
+      }
+    }
+    
+    if (!tokenToUse) {
       console.error('❌ No valid Mapbox token found');
       console.log('Environment token:', envToken ? envToken.substring(0, 20) + '...' : 'undefined');
       console.log('Environment variable VITE_MAPBOX_ACCESS_TOKEN exists:', !!import.meta.env.VITE_MAPBOX_ACCESS_TOKEN);
@@ -157,23 +171,56 @@ const MapComponent: React.FC<MapComponentProps> = ({ center, onLocationChange })
 
     try {
       console.log('🗺️ Initializing Mapbox with token:', token.substring(0, 20) + '...');
+      console.log('Full token (for debugging):', token);
+      console.log('Token length:', token.length);
+      console.log('User Agent:', navigator.userAgent);
+      console.log('Current URL:', window.location.href);
+      
+      // Validate token format more thoroughly
+      if (!token.startsWith('pk.')) {
+        throw new Error('Invalid token format: must start with pk.');
+      }
+      
+      if (token.length < 80) {
+        throw new Error('Token appears to be incomplete or truncated');
+      }
       
       // Set the access token
       mapboxgl.accessToken = token;
+      console.log('Mapbox access token set successfully');
       
       // Make mapboxgl available globally for marker functions
       (window as any).mapboxgl = mapboxgl;
 
+      // Try multiple map styles for better compatibility
+      const mapStyles = [
+        'mapbox://styles/mapbox/streets-v12',
+        'mapbox://styles/mapbox/outdoors-v12', 
+        'mapbox://styles/mapbox/light-v11',
+        'mapbox://styles/mapbox/satellite-streets-v12'
+      ];
+      
+      const primaryStyle = mapStyles[0]; // Use streets as primary for better reliability
+      
+      console.log('Attempting to create map with style:', primaryStyle);
+      console.log('Map container exists:', !!mapContainer.current);
+      console.log('Token validated:', token.length, 'characters');
+      
       // Initialize the map
       const newMap = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/satellite-streets-v12',
+        style: primaryStyle,
         center: center,
         zoom: 12,
         pitch: 0,
         maxZoom: 18,
         minZoom: 8,
-        attributionControl: true
+        attributionControl: true,
+        // Add additional options for better compatibility
+        transformRequest: (url, resourceType) => {
+          console.log('Mapbox API request:', resourceType, url);
+          return { url };
+        }
       });
       
       // Handle map load success
@@ -215,21 +262,36 @@ const MapComponent: React.FC<MapComponentProps> = ({ center, onLocationChange })
       // Handle map load errors
       newMap.on('error', (e) => {
         console.error('❌ Mapbox error details:', e);
+        console.log('Error object:', JSON.stringify(e, null, 2));
         console.log('Error type:', e.error?.message || 'Unknown error');
-        console.log('Token being used:', token.substring(0, 20) + '...');
-        console.log('Map style:', 'mapbox://styles/mapbox/satellite-streets-v12');
+        console.log('Token being used:', token);
+        console.log('Map style used:', primaryStyle);
+        console.log('Network online:', navigator.onLine);
+        console.log('Mapbox GL JS version:', mapboxgl.version);
+        
+        // Test token with direct API call
+        fetch(`https://api.mapbox.com/styles/v1/mapbox/streets-v12?access_token=${token}`)
+          .then(response => {
+            console.log('Direct API test status:', response.status);
+            console.log('Direct API test ok:', response.ok);
+            return response.text();
+          })
+          .then(data => console.log('Direct API response:', data.substring(0, 200)))
+          .catch(apiError => console.error('Direct API test failed:', apiError));
         
         let errorMessage = 'Failed to load map tiles.';
         
-        if (e.error?.message?.includes('Unauthorized')) {
-          errorMessage = 'Invalid Mapbox token. Please check your access token.';
-        } else if (e.error?.message?.includes('rate limit')) {
+        if (e.error?.message?.includes('Unauthorized') || e.error?.status === 401) {
+          errorMessage = 'Invalid Mapbox token. Token authentication failed.';
+        } else if (e.error?.message?.includes('rate limit') || e.error?.status === 429) {
           errorMessage = 'Mapbox rate limit exceeded. Please try again later.';
-        } else if (e.error?.message?.includes('network')) {
+        } else if (e.error?.message?.includes('network') || e.error?.status === 0) {
           errorMessage = 'Network error loading map tiles. Please check your connection.';
+        } else if (e.error?.status === 404) {
+          errorMessage = 'Map style not found. Using outdated Mapbox style.';
         }
         
-        setMapError(errorMessage);
+        setMapError(`${errorMessage} (Status: ${e.error?.status || 'unknown'})`);
         setIsLoadingMap(false);
       });
 
