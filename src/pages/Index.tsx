@@ -11,15 +11,25 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('Index: Starting auth initialization');
+    
+    // Add timeout to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      console.log('Index: Loading timeout reached, stopping loading');
+      setLoading(false);
+    }, 5000); // 5 second timeout
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Index: Auth state changed', event, !!session);
+        clearTimeout(loadingTimeout);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
           // Fetch user profile
-          setTimeout(async () => {
+          try {
             const { data: profile } = await supabase
               .from('profiles')
               .select('*')
@@ -27,7 +37,10 @@ const Index = () => {
               .maybeSingle();
             
             setUserProfile(profile);
-          }, 0);
+          } catch (error) {
+            console.error('Index: Error fetching profile', error);
+            setUserProfile(null);
+          }
         } else {
           setUserProfile(null);
         }
@@ -35,16 +48,27 @@ const Index = () => {
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (!session) {
+    // Check for existing session with error handling
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        console.log('Index: Initial session check', !!session);
+        clearTimeout(loadingTimeout);
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (!session) {
+          setLoading(false);
+        }
+      })
+      .catch((error) => {
+        console.error('Index: Error getting session', error);
+        clearTimeout(loadingTimeout);
         setLoading(false);
-      }
-    });
+      });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(loadingTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleLogin = (userData: any) => {
