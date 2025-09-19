@@ -41,34 +41,41 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
         try {
           const parsedAdmin = JSON.parse(savedAdmin);
           
+          // Check if it's a demo token - if so, skip API verification
+          if (token.startsWith('demo-token-')) {
+            console.log('🎭 Using demo admin credentials');
+            if (isMounted) {
+              setAdmin(parsedAdmin);
+              setLoading(false);
+            }
+            return;
+          }
+          
           // Set admin immediately from stored data
           if (isMounted) {
             setAdmin(parsedAdmin);
           }
           
-          // Try to verify token with timeout
-          const verificationPromise = authAPI.verify();
-          const timeoutPromise = new Promise((resolve) => 
-            setTimeout(() => resolve({ success: false }), 3000)
-          );
-          
-          const response = await Promise.race([verificationPromise, timeoutPromise]) as any;
-          
-          if (response.success) {
-            if (isMounted) {
+          // Try to verify real token with timeout - but don't clear auth on failure
+          try {
+            const verificationPromise = authAPI.verify();
+            const timeoutPromise = new Promise((resolve) => 
+              setTimeout(() => resolve({ success: false }), 3000)
+            );
+            
+            const response = await Promise.race([verificationPromise, timeoutPromise]) as any;
+            
+            if (response.success && isMounted) {
               setAdmin(response.admin || parsedAdmin);
               initializeSocket();
             }
-          } else {
-            // Token invalid or timeout, clear storage
-            localStorage.removeItem('admin_token');
-            localStorage.removeItem('admin_user');
-            if (isMounted) {
-              setAdmin(null);
-            }
+            // Don't clear auth on verification failure - keep using stored data
+          } catch (error) {
+            console.warn('Token verification failed, keeping stored auth:', error);
+            // Keep the stored admin data even if verification fails
           }
         } catch (error) {
-          console.error('Auth verification failed:', error);
+          console.error('Failed to parse stored admin data:', error);
           localStorage.removeItem('admin_token');
           localStorage.removeItem('admin_user');
           if (isMounted) {
@@ -87,7 +94,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
       if (isMounted) {
         setLoading(false);
       }
-    }, 4000);
+    }, 2000); // Reduced timeout
 
     initAuth().finally(() => clearTimeout(loadingTimeout));
     

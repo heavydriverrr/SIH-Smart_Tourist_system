@@ -18,8 +18,12 @@ const AdminLogin: React.FC = () => {
   const { login, isAuthenticated, loading: authLoading } = useAdminAuth();
   const navigate = useNavigate();
 
+  // Debug logging
+  console.log('🚪 AdminLogin:', { isAuthenticated, authLoading });
+
   // Redirect if already authenticated
   if (authLoading) {
+    console.log('⌛ Admin auth loading...');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -31,11 +35,14 @@ const AdminLogin: React.FC = () => {
   }
 
   if (isAuthenticated) {
+    console.log('✅ Admin already authenticated, redirecting to dashboard');
     return <Navigate to="/admin/dashboard" replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('📋 Form submitted with:', { email });
+    
     if (!email || !password) {
       setError('Please enter both email and password');
       return;
@@ -43,11 +50,14 @@ const AdminLogin: React.FC = () => {
 
     setLoading(true);
     setError('');
+    console.log('🔑 Starting login process...');
 
     try {
       await login(email, password);
-      navigate('/admin/dashboard');
+      console.log('✅ Login successful, waiting for auth state change');
+      // Don't manually navigate - let the auth state change trigger the redirect
     } catch (error: any) {
+      console.error('❌ Login failed:', error);
       setError(error.message || 'Login failed');
     } finally {
       setLoading(false);

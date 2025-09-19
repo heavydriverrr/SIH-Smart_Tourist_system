@@ -8,7 +8,10 @@ interface ProtectedAdminRouteProps {
 }
 
 const ProtectedAdminRoute: React.FC<ProtectedAdminRouteProps> = ({ children }) => {
-  const { isAuthenticated, loading } = useAdminAuth();
+  const { isAuthenticated, loading, admin } = useAdminAuth();
+
+  // Debug logging
+  console.log('🔐 ProtectedAdminRoute:', { isAuthenticated, loading, admin: admin?.email });
 
   if (loading) {
     return (
@@ -22,9 +25,11 @@ const ProtectedAdminRoute: React.FC<ProtectedAdminRouteProps> = ({ children }) =
   }
 
   if (!isAuthenticated) {
+    console.log('🚫 User not authenticated, redirecting to login');
     return <Navigate to="/admin/login" replace />;
   }
 
+  console.log('✅ User authenticated, rendering admin content');
   return <>{children}</>;
 };
 
