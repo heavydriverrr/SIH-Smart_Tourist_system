@@ -1,30 +1,38 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/admin/((?!\\.[^/]*$).*)",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/((?!api|assets|_next|favicon.ico|.*\\.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot|ico)).*)",
+      "source": "/((?!api|assets|_next|favicon.ico|robots.txt|placeholder.svg|trusttour-logo.svg|test-api.html|.*\\.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot|ico|html)$).*)",
       "destination": "/index.html"
     }
   ],
   "headers": [
     {
-      "source": "/(.*)\\.js$",
+      "source": "/assets/(.*)",
       "headers": [
         {
-          "key": "Content-Type",
-          "value": "text/javascript; charset=utf-8"
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
         }
       ]
     },
     {
-      "source": "/(.*)\\.css$",
+      "source": "/(.*\\.(js|css))$",
       "headers": [
         {
-          "key": "Content-Type",
-          "value": "text/css; charset=utf-8"
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*\\.(png|jpg|jpeg|gif|svg|ico))$",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
         }
       ]
     }
