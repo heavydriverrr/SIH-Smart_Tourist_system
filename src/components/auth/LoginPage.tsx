@@ -78,11 +78,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center space-x-2">
-            <Shield className="h-10 w-10 text-primary-foreground" />
-            <h1 className="text-3xl font-bold text-primary-foreground">SmartShield</h1>
+            <img src="/trusttour-logo.svg" alt="TrustTour" className="h-12 w-12" />
+            <h1 className="text-3xl font-bold text-primary-foreground">TrustTour</h1>
           </div>
           <p className="text-primary-foreground/80 text-lg">
-            Your Digital Safety Companion
+            Your Trusted Travel Companion
           </p>
         </div>
 
@@ -106,7 +106,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         <Card className="shadow-card bg-gradient-card border-0">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">
-              {isLogin ? 'Welcome Back' : 'Join SmartShield'}
+              {isLogin ? 'Welcome Back' : 'Join TrustTour'}
             </CardTitle>
             <CardDescription>
               {isLogin 

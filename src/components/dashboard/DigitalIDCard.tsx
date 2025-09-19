@@ -39,7 +39,7 @@ const DigitalIDCard: React.FC<DigitalIDCardProps> = ({ user, onClose }) => {
     // Simulate sharing functionality
     if (navigator.share) {
       navigator.share({
-        title: 'SmartShield Digital Tourist ID',
+        title: 'TrustTour Digital Tourist ID',
         text: `Digital Tourist ID: ${user.digitalId}`,
         url: window.location.href
       });
@@ -76,7 +76,7 @@ const DigitalIDCard: React.FC<DigitalIDCardProps> = ({ user, onClose }) => {
                 <Shield className="h-6 w-6" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">SmartShield</h2>
+                <h2 className="text-xl font-bold">TrustTour</h2>
                 <p className="text-primary-foreground/80 text-sm">Digital Tourist ID</p>
               </div>
             </div>

@@ -129,10 +129,10 @@ const AdminDashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">
-                <Shield className="h-8 w-8 text-primary" />
+                <img src="/trusttour-logo.svg" alt="TrustTour" className="h-8 w-8" />
                 <div>
-                  <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-                  <p className="text-sm text-muted-foreground">Smart Wanderer Control Center</p>
+                  <h1 className="text-2xl font-bold">TrustTour Admin</h1>
+                  <p className="text-sm text-muted-foreground">Travel Security Command Center</p>
                 </div>
               </div>
             </div>

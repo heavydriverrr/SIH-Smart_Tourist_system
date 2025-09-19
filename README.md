@@ -1,40 +1,68 @@
-# Welcome to your Lovable project
+# TrustTour - Secure Travel Management System
 
-## Project info
+🛡️ **Your Trusted Travel Safety Companion**
 
-**URL**: https://lovable.dev/projects/a8b1ee6f-6eec-4ffe-a009-3477467664d0
+TrustTour is an advanced tourist safety and travel management system featuring real-time monitoring, emergency response, and secure travel coordination.
 
-## How can I edit this code?
+## 🌟 Live Demo
 
-There are several ways of editing your application.
+- **Frontend**: https://trusttourapp.vercel.app/
+- **Admin Dashboard**: https://trusttourapp.vercel.app/admin/login
+- **Repository**: https://github.com/heavydriverrr/smart-wanderer-app
 
-**Use Lovable**
+## 🔑 Demo Credentials
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/a8b1ee6f-6eec-4ffe-a009-3477467664d0) and start prompting.
+**Admin Access:**
+- Email: admin@smartwanderer.com
+- Password: admin123456
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🚀 Getting Started
 
-**Use your preferred IDE**
+### Prerequisites
+- Node.js 18+ and npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+### Local Development
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Clone the repository
+git clone https://github.com/heavydriverrr/smart-wanderer-app.git
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Navigate to the project directory
+cd smart-wanderer-app
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
+
+# Build for production
+npm run build
 ```
+
+## ✨ Features
+
+### 🏠 **Tourist Portal**
+- User registration and authentication
+- Digital tourist ID generation
+- Real-time location tracking
+- Emergency SOS button
+- Safety zone monitoring
+
+### 🛡️ **Admin Dashboard**
+- Real-time tourist monitoring
+- Emergency alert management
+- Live location tracking
+- Analytics and reporting
+- Activity logging
+
+### 🔧 **Technical Features**
+- **Frontend**: React 18 + TypeScript + Tailwind CSS
+- **Backend**: Node.js + Express + PostgreSQL
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: JWT-based secure auth
+- **Deployment**: Vercel (Frontend) + Render (Backend)
+- **Real-time**: WebSocket support for live updates
 
 **Edit a file directly in GitHub**
 

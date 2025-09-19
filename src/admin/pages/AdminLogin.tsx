@@ -58,11 +58,11 @@ const AdminLogin: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-secondary/10 p-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto h-16 w-16 bg-primary rounded-full flex items-center justify-center">
-            <Shield className="h-8 w-8 text-primary-foreground" />
+          <div className="mx-auto h-16 w-16 flex items-center justify-center">
+            <img src="/trusttour-logo.svg" alt="TrustTour" className="h-14 w-14" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold">Smart Wanderer Admin</CardTitle>
+            <CardTitle className="text-2xl font-bold">TrustTour Admin</CardTitle>
             <CardDescription>
               Sign in to access the administrative dashboard
             </CardDescription>
@@ -82,7 +82,7 @@ const AdminLogin: React.FC = () => {
               <Input
                 id="email"
                 type="email"
-                placeholder="admin@smartwanderer.com"
+                placeholder="admin@trusttour.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
@@ -139,6 +139,9 @@ const AdminLogin: React.FC = () => {
             <p>Default credentials (development):</p>
             <p className="font-mono text-xs mt-1">
               admin@smartwanderer.com / admin123456
+            </p>
+            <p className="text-xs mt-1 text-blue-600">
+              Note: Using legacy credentials for demo
             </p>
           </div>
         </CardContent>
