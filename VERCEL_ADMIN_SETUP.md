@@ -11,16 +11,20 @@ To ensure the admin portal works correctly on Vercel deployment, make sure the f
    pk.eyJ1IjoienByYXRoYW14IiwiYSI6ImNtZnIyd2xoYzA0Ymwya3NkejFqemhkMW0ifQ.Da77w6Dyml0JEuHHc_RQsA
    ```
 
-2. **VITE_DEMO_MODE** (Optional)
+2. **VITE_API_URL** (Backend API)
+   ```
+   https://smart-wanderer-backend.onrender.com
+   ```
+
+3. **VITE_WS_URL** (WebSocket URL)
+   ```
+   wss://smart-wanderer-backend.onrender.com
+   ```
+
+4. **VITE_FALLBACK_TO_DEMO** (Hybrid Mode)
    ```
    true
    ```
-
-### Environment Variables NOT to Set
-
-Do **NOT** set these variables in Vercel (to enable demo mode):
-- `VITE_API_URL` - Leave unset to enable demo mode
-- `VITE_WS_URL` - Leave unset to enable demo mode
 
 ## Admin Login Credentials
 
@@ -33,21 +37,34 @@ Password: admin123456
 
 ## How It Works
 
-- **Demo Mode**: When `VITE_API_URL` is not set or contains placeholder values, the admin system automatically switches to demo mode
-- **No Backend Required**: The admin portal works entirely client-side with mock data
-- **Offline Functionality**: All admin features work without internet connectivity to backend services
+- **Real Backend Integration**: Admin portal connects to the live backend at https://smart-wanderer-backend.onrender.com
+- **Hybrid Mode**: If backend is unavailable, automatically falls back to demo mode with same credentials
+- **Live Data**: Real-time tourist locations, alerts, and system data when backend is connected
+- **Robust Fallback**: Seamless fallback to demo mode if backend is sleeping or unavailable
 
 ## Troubleshooting
 
 If admin login doesn't work on Vercel:
 
-1. **Check Environment Variables**: Ensure `VITE_API_URL` is NOT set in Vercel
-2. **Clear Browser Cache**: Clear localStorage and try again
-3. **Check Console**: Open browser DevTools and check for any errors
-4. **Use Exact Credentials**: Make sure you're using the exact demo credentials listed above
+1. **Check Environment Variables**: Ensure `VITE_API_URL` is set to the backend URL in Vercel
+2. **Backend Status**: Check if https://smart-wanderer-backend.onrender.com/health returns OK
+3. **Clear Browser Cache**: Clear localStorage and try again
+4. **Check Console**: Open browser DevTools and check for any errors
+5. **Use Exact Credentials**: Make sure you're using the exact credentials listed above
+6. **Backend Sleep**: Render backends sleep after inactivity - first request may take 30+ seconds
 
-## Admin Features Available in Demo Mode
+## Admin Features Available
 
+### With Backend Connected:
+- ✅ Admin Dashboard with live statistics
+- ✅ Real-time tourist location map with blue dot markers
+- ✅ Live system status monitoring
+- ✅ Real activity logs and alerts
+- ✅ Live tourist data and emergency alerts
+- ✅ WebSocket real-time updates
+- ✅ Full CRUD operations
+
+### Fallback Demo Mode:
 - ✅ Admin Dashboard with mock statistics
 - ✅ Tourist location map with blue dot markers  
 - ✅ System status monitoring
@@ -55,4 +72,4 @@ If admin login doesn't work on Vercel:
 - ✅ All UI components and navigation
 - ✅ Authentication state persistence
 
-The admin portal provides a fully functional demo experience without requiring any backend infrastructure.
+The admin portal provides a hybrid experience with live backend data when available, and seamless fallback to demo mode.

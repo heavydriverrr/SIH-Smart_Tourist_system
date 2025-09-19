@@ -42,15 +42,17 @@ adminApi.interceptors.response.use(
 // Authentication endpoints (real Supabase with fallback)
 export const authAPI = {
   login: async (email: string, password: string) => {
+    const apiUrl = import.meta.env.VITE_API_URL;
+    const fallbackToDemo = import.meta.env.VITE_FALLBACK_TO_DEMO === 'true';
+    
+    // If no API URL is configured, skip to demo mode immediately
+    if (!apiUrl || apiUrl.includes('your-backend')) {
+      console.log('🎭 No backend API configured, using demo mode only');
+      throw new Error('Cannot connect to server. Please ensure the backend is running.');
+    }
+    
     try {
-      // Get API URL - if not set or invalid, skip API call entirely
-      const apiUrl = import.meta.env.VITE_API_URL;
-      
-      // In production without a backend, skip API call for demo credentials
-      if (!apiUrl || apiUrl.includes('localhost') || apiUrl.includes('your-backend')) {
-        console.log('🎭 No backend API configured, using demo mode only');
-        throw new Error('Cannot connect to server. Please ensure the backend is running.');
-      }
+      console.log('🔗 Attempting API login to:', apiUrl);
       
       // Try API call with proper error handling
       const response = await fetch(`${apiUrl}/api/auth/login`, {
@@ -69,17 +71,38 @@ export const authAPI = {
       if (!response.ok) {
         const errorData = await response.text();
         console.error('❌ Auth error:', errorData);
+        
+        // If backend returns 401/403, it's a credential issue, not connection
+        if (response.status === 401 || response.status === 403) {
+          throw new Error('Invalid credentials');
+        }
+        
+        // For other errors, might be backend issue - fallback if enabled
+        if (fallbackToDemo) {
+          console.log('🔄 Backend error, will fallback to demo if demo credentials used');
+          throw new Error('Backend temporarily unavailable');
+        }
+        
         throw new Error(`Authentication failed: ${response.status}`);
       }
       
       const data = await response.json();
-      console.log('✅ Auth success:', data.success);
+      console.log('✅ Backend auth success:', data.success);
       return data;
+      
     } catch (error: any) {
-      console.error('❌ Network error during login:', error);
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      console.error('❌ Network/API error during login:', error);
+      
+      // Network connectivity issues
+      if (error.name === 'TypeError' || error.message.includes('fetch') || error.message.includes('NetworkError')) {
+        console.log('🚫 Network error - backend may be sleeping or unavailable');
+        if (fallbackToDemo) {
+          throw new Error('Cannot connect to backend server. Using demo credentials: admin@smartwanderer.com / admin123456');
+        }
         throw new Error('Cannot connect to server. Please ensure the backend is running.');
       }
+      
+      // Re-throw other errors
       throw error;
     }
   },
