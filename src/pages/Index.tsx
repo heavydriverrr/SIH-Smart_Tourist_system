@@ -12,60 +12,103 @@ const Index = () => {
 
   useEffect(() => {
     console.log('Index: Starting auth initialization');
+    let isMounted = true;
     
-    // Add timeout to prevent infinite loading
+    // Shorter timeout to prevent infinite loading
     const loadingTimeout = setTimeout(() => {
-      console.log('Index: Loading timeout reached, stopping loading');
-      setLoading(false);
-    }, 5000); // 5 second timeout
+      if (isMounted) {
+        console.log('Index: Loading timeout reached, stopping loading');
+        setLoading(false);
+      }
+    }, 3000); // 3 second timeout
     
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!isMounted) return;
+        
         console.log('Index: Auth state changed', event, !!session);
         clearTimeout(loadingTimeout);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch user profile
+          // Create a basic user profile if none exists
+          let profile = {
+            id: session.user.id,
+            email: session.user.email,
+            name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Tourist',
+            phone: session.user.user_metadata?.phone || '',
+            emergency_contact: session.user.user_metadata?.emergency_contact || '',
+            created_at: session.user.created_at
+          };
+          
+          // Try to fetch existing profile, but don't wait forever
           try {
-            const { data: profile } = await supabase
+            const profilePromise = supabase
               .from('profiles')
               .select('*')
               .eq('id', session.user.id)
               .maybeSingle();
             
-            setUserProfile(profile);
+            const timeoutPromise = new Promise((resolve) => 
+              setTimeout(() => resolve({ data: null }), 2000)
+            );
+            
+            const result = await Promise.race([profilePromise, timeoutPromise]) as any;
+            
+            if (result?.data) {
+              profile = { ...profile, ...result.data };
+            }
           } catch (error) {
-            console.error('Index: Error fetching profile', error);
-            setUserProfile(null);
+            console.error('Index: Error fetching profile (using defaults)', error);
+          }
+          
+          if (isMounted) {
+            setUserProfile(profile);
           }
         } else {
-          setUserProfile(null);
+          if (isMounted) {
+            setUserProfile(null);
+          }
         }
-        setLoading(false);
+        
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     );
 
-    // Check for existing session with error handling
-    supabase.auth.getSession()
-      .then(({ data: { session } }) => {
+    // Check for existing session with faster timeout
+    Promise.race([
+      supabase.auth.getSession(),
+      new Promise((resolve) => 
+        setTimeout(() => resolve({ data: { session: null } }), 2000)
+      )
+    ])
+      .then((result: any) => {
+        if (!isMounted) return;
+        
+        const session = result?.data?.session;
         console.log('Index: Initial session check', !!session);
         clearTimeout(loadingTimeout);
         setSession(session);
         setUser(session?.user ?? null);
+        
         if (!session) {
           setLoading(false);
         }
       })
       .catch((error) => {
+        if (!isMounted) return;
+        
         console.error('Index: Error getting session', error);
         clearTimeout(loadingTimeout);
         setLoading(false);
       });
 
     return () => {
+      isMounted = false;
       clearTimeout(loadingTimeout);
       subscription.unsubscribe();
     };
@@ -92,11 +135,21 @@ const Index = () => {
     );
   }
 
-  if (!user || !userProfile) {
+  if (!user) {
     return <LoginPage onLogin={handleLogin} />;
   }
 
-  return <TouristDashboard user={userProfile} onLogout={handleLogout} />;
+  // Use user profile if available, otherwise create basic profile from user data
+  const currentProfile = userProfile || {
+    id: user.id,
+    email: user.email,
+    name: user.user_metadata?.name || user.email?.split('@')[0] || 'Tourist',
+    phone: user.user_metadata?.phone || '',
+    emergency_contact: user.user_metadata?.emergency_contact || '',
+    created_at: user.created_at
+  };
+
+  return <TouristDashboard user={currentProfile} onLogout={handleLogout} />;
 };
 
 export default Index;

@@ -1,0 +1,51 @@
+/* Custom Mapbox Attribution Styling */
+.mapboxgl-ctrl-attrib {
+  font-size: 8px !important;
+  opacity: 0.4 !important;
+  background-color: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(4px) !important;
+  border-radius: 4px !important;
+  padding: 1px 4px !important;
+  max-width: 150px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  transition: opacity 0.2s ease !important;
+}
+
+.mapboxgl-ctrl-attrib:hover {
+  opacity: 0.8 !important;
+  max-width: none !important;
+  white-space: normal !important;
+}
+
+.mapboxgl-ctrl-attrib a {
+  color: #555 !important;
+  text-decoration: none !important;
+}
+
+.mapboxgl-ctrl-attrib a:hover {
+  color: #333 !important;
+  text-decoration: underline !important;
+}
+
+/* Hide attribution toggle button on mobile */
+.mapboxgl-ctrl-attrib-button {
+  display: none !important;
+}
+
+/* Position attribution in bottom right, less prominent */
+.mapboxgl-ctrl-bottom-right {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+}
+
+/* Make the map container clean */
+.mapboxgl-canvas-container {
+  cursor: grab;
+}
+
+.mapboxgl-canvas-container:active {
+  cursor: grabbing;
+}

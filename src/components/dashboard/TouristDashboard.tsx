@@ -187,7 +187,7 @@ const TouristDashboard: React.FC<TouristDashboardProps> = ({ user, onLogout }) =
                   Last update: {locationService.lastUpdate.toLocaleTimeString()}
                 </p>
               )}
-              <div className="h-48 rounded-lg overflow-hidden">
+              <div className="rounded-lg overflow-hidden">
                 <MapComponent 
                   center={[currentLocation.lng, currentLocation.lat]}
                   onLocationChange={setCurrentLocation}
