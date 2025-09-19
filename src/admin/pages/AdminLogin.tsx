@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,11 +15,19 @@ const AdminLogin: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { login, isAuthenticated, loading: authLoading } = useAdminAuth();
+  const { login, isAuthenticated, loading: authLoading, admin } = useAdminAuth();
   const navigate = useNavigate();
 
   // Debug logging
-  console.log('🚪 AdminLogin:', { isAuthenticated, authLoading });
+  console.log('🚪 AdminLogin:', { isAuthenticated, authLoading, admin: admin?.email });
+  
+  // Monitor auth state changes
+  useEffect(() => {
+    console.log('📊 Auth state changed in AdminLogin:', { isAuthenticated, admin: admin?.email });
+    if (isAuthenticated && admin) {
+      console.log('🚀 Auth state detected, should redirect soon...');
+    }
+  }, [isAuthenticated, admin]);
 
   // Redirect if already authenticated
   if (authLoading) {
@@ -55,6 +63,13 @@ const AdminLogin: React.FC = () => {
     try {
       await login(email, password);
       console.log('✅ Login successful, waiting for auth state change');
+      
+      // Add a small delay to check if auth state is properly updated
+      setTimeout(() => {
+        console.log('🔄 Checking auth state after login delay...');
+        console.log('Current isAuthenticated:', isAuthenticated);
+      }, 200);
+      
       // Don't manually navigate - let the auth state change trigger the redirect
     } catch (error: any) {
       console.error('❌ Login failed:', error);

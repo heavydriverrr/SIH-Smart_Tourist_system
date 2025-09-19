@@ -110,6 +110,8 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
       
       // Demo credentials - always try this first for reliability
       if (email === 'admin@smartwanderer.com' && password === 'admin123456') {
+        console.log('🎭 Setting up demo admin...');
+        
         const demoAdmin = {
           id: 'demo-admin-001',
           email: 'admin@smartwanderer.com',
@@ -120,14 +122,22 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
         
         const demoToken = 'demo-token-' + Date.now();
         
-        // Store auth data
+        console.log('💾 Storing demo admin data...', { demoAdmin, demoToken });
+        
+        // Store auth data first
         localStorage.setItem('admin_token', demoToken);
         localStorage.setItem('admin_user', JSON.stringify(demoAdmin));
         
-        // Update state
-        setAdmin(demoAdmin);
+        console.log('📞 Updating admin state...');
         
-        console.log('✅ Demo admin login successful!');
+        // Use a functional update to ensure state is properly updated
+        setAdmin(prevAdmin => {
+          console.log('🔄 State updater called. Previous admin:', prevAdmin);
+          console.log('🔄 Setting new admin:', demoAdmin);
+          return demoAdmin;
+        });
+        
+        console.log('✅ Demo admin login successful! State update initiated.');
         return;
       }
       
