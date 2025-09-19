@@ -143,33 +143,54 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
       
       // For any other credentials, try API login but fallback gracefully
       try {
+        console.log('🌐 Attempting backend API login...');
         const response = await authAPI.login(email, password);
-        console.log('📥 Login response:', response);
+        console.log('📥 Backend login response:', response);
         
         if (response.success) {
           const { token, admin: adminData } = response;
           
+          console.log('💾 Storing backend admin data...');
           // Store auth data
           localStorage.setItem('admin_token', token);
           localStorage.setItem('admin_user', JSON.stringify(adminData));
           
           // Update state
-          setAdmin(adminData);
+          setAdmin(prevAdmin => {
+            console.log('🔄 Backend auth state update:', adminData);
+            return adminData;
+          });
           
           // Initialize socket connection
           initializeSocket();
-          console.log('✅ Admin login successful!');
+          console.log('✅ Backend admin login successful!');
           return;
         }
       } catch (apiError: any) {
-        console.warn('🔄 API login failed, checking for demo mode:', apiError.message);
+        console.warn('⚠️ API login failed:', apiError);
+        console.warn('🔍 API Error details:', {
+          name: apiError.name,
+          message: apiError.message,
+          stack: apiError.stack
+        });
         
-        // If API is not available, inform user about demo credentials
-        if (apiError.message.includes('Cannot connect to server') || 
-            apiError.message.includes('fetch') ||
-            apiError.name === 'TypeError') {
+        // Check if this is a network/server error vs authentication error
+        const isServerError = 
+          apiError.message.includes('Cannot connect to server') || 
+          apiError.message.includes('fetch') ||
+          apiError.message.includes('Backend temporarily unavailable') ||
+          apiError.message.includes('TypeError') ||
+          apiError.name === 'TypeError' ||
+          apiError.code === 'NETWORK_ERROR';
+          
+        if (isServerError) {
+          console.log('🚫 Server connection issue detected');
           throw new Error('Backend server not available. Please use demo credentials: admin@smartwanderer.com / admin123456');
         }
+        
+        // If it's not a server error, it's likely an authentication error
+        console.log('🔐 Authentication error (not server issue)');
+        throw new Error('Invalid credentials. Please use demo credentials: admin@smartwanderer.com / admin123456');
       }
       
       // If we get here, the credentials were invalid

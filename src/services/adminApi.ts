@@ -92,14 +92,34 @@ export const authAPI = {
       
     } catch (error: any) {
       console.error('❌ Network/API error during login:', error);
+      console.error('🔍 Full error object:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        cause: error.cause
+      });
       
-      // Network connectivity issues
+      // Handle different types of errors
       if (error.name === 'TypeError' || error.message.includes('fetch') || error.message.includes('NetworkError')) {
         console.log('🚫 Network error - backend may be sleeping or unavailable');
         if (fallbackToDemo) {
           throw new Error('Cannot connect to backend server. Using demo credentials: admin@smartwanderer.com / admin123456');
         }
         throw new Error('Cannot connect to server. Please ensure the backend is running.');
+      }
+      
+      // Handle rate limit or server configuration errors
+      if (error.message.includes('rate limit') || error.message.includes('ValidationError') || error.message.includes('trust proxy')) {
+        console.log('🚫 Backend configuration error detected');
+        if (fallbackToDemo) {
+          throw new Error('Backend temporarily unavailable');
+        }
+        throw new Error('Backend server configuration error');
+      }
+      
+      // Handle other network errors
+      if (error.name === 'NetworkError' || error.code === 'NETWORK_ERROR') {
+        throw new Error('Network error - backend may be unavailable');
       }
       
       // Re-throw other errors
