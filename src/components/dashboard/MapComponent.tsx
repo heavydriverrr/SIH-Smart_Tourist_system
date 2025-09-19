@@ -104,28 +104,38 @@ const MapComponent: React.FC<MapComponentProps> = ({ center, onLocationChange })
   useEffect(() => {
     if (!mapContainer.current) return;
     
-    // Get token from environment variables
+    // Get token from multiple sources
     const envToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
     const savedToken = localStorage.getItem('mapbox_token');
+    // Fallback token for production (your verified token)
+    const fallbackToken = 'pk.eyJ1IjoienByYXRoYW14IiwiYSI6ImNtZnIyd2xoYzA0Ymwya3NkejFqemhkMW0ifQ.Da77w6Dyml0JEuHHc_RQsA';
     
     console.log('🗺️ MapComponent: Initializing Mapbox...');
     console.log('Environment token available:', !!envToken);
-    console.log('Token length:', envToken?.length);
-    console.log('Token starts with pk:', envToken?.startsWith('pk.'));
+    console.log('Environment token length:', envToken?.length || 0);
+    console.log('Environment token starts with pk:', envToken?.startsWith('pk.') || false);
+    console.log('Running in production:', import.meta.env.PROD);
     
     let tokenToUse = '';
     
-    // Priority: environment token > saved token
+    // Priority: environment token > saved token > fallback token
     if (envToken && envToken.trim().length > 50 && envToken.trim().startsWith('pk.')) {
       tokenToUse = envToken.trim();
       console.log('✅ Using environment token');
     } else if (savedToken && savedToken.length > 50 && savedToken.startsWith('pk.')) {
       tokenToUse = savedToken;
       console.log('✅ Using saved token');
+    } else if (fallbackToken && fallbackToken.length > 50 && fallbackToken.startsWith('pk.')) {
+      tokenToUse = fallbackToken;
+      console.log('✅ Using fallback token (for Vercel deployment)');
     } else {
       console.error('❌ No valid Mapbox token found');
       console.log('Environment token:', envToken ? envToken.substring(0, 20) + '...' : 'undefined');
-      setMapError('Mapbox access token is required. Please configure VITE_MAPBOX_ACCESS_TOKEN.');
+      console.log('Environment variable VITE_MAPBOX_ACCESS_TOKEN exists:', !!import.meta.env.VITE_MAPBOX_ACCESS_TOKEN);
+      console.log('All environment variables:', Object.keys(import.meta.env));
+      
+      // Show token input form for manual entry
+      setMapError('Mapbox access token is required. Please add your token or contact support.');
       setIsLoadingMap(false);
       setShowTokenInput(true);
       return;
@@ -204,8 +214,22 @@ const MapComponent: React.FC<MapComponentProps> = ({ center, onLocationChange })
       
       // Handle map load errors
       newMap.on('error', (e) => {
-        console.error('❌ Map error:', e);
-        setMapError('Failed to load map tiles. Please check your internet connection.');
+        console.error('❌ Mapbox error details:', e);
+        console.log('Error type:', e.error?.message || 'Unknown error');
+        console.log('Token being used:', token.substring(0, 20) + '...');
+        console.log('Map style:', 'mapbox://styles/mapbox/satellite-streets-v12');
+        
+        let errorMessage = 'Failed to load map tiles.';
+        
+        if (e.error?.message?.includes('Unauthorized')) {
+          errorMessage = 'Invalid Mapbox token. Please check your access token.';
+        } else if (e.error?.message?.includes('rate limit')) {
+          errorMessage = 'Mapbox rate limit exceeded. Please try again later.';
+        } else if (e.error?.message?.includes('network')) {
+          errorMessage = 'Network error loading map tiles. Please check your connection.';
+        }
+        
+        setMapError(errorMessage);
         setIsLoadingMap(false);
       });
 
