@@ -157,15 +157,31 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
         console.log('🌐 Attempting backend authentication with URL:', backendUrl);
         
         try {
-          // Override the API URL temporarily for this attempt
-          const originalUrl = import.meta.env.VITE_API_URL;
-          (import.meta.env as any).VITE_API_URL = backendUrl;
+          // Direct API call with explicit URL
+          const response = await fetch(`${backendUrl}/api/auth/login`, {
+            method: 'POST',
+            mode: 'cors',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({ email, password })
+          });
           
-          const response = await authAPI.login(email, password);
-          console.log('📥 Backend login response:', response);
+          console.log('🔗 Direct backend response status:', response.status);
           
-          if (response.success) {
-            const { token, admin: adminData } = response;
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Backend API error:', errorText);
+            throw new Error(`Backend API failed: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          console.log('📥 Backend login response:', data);
+          
+          if (data.success) {
+            const { token, admin: adminData } = data;
             
             console.log('💾 Storing backend admin data...');
             localStorage.setItem('admin_token', token);
@@ -180,10 +196,9 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
             initializeSocket();
             console.log('✅ Backend admin login successful!');
             return;
+          } else {
+            throw new Error('Backend returned success: false');
           }
-          
-          // Restore original URL
-          (import.meta.env as any).VITE_API_URL = originalUrl;
           
         } catch (backendError: any) {
           console.warn('⚠️ Backend authentication failed:', backendError);
@@ -191,9 +206,6 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
             message: backendError.message,
             stack: backendError.stack
           });
-          
-          // Restore original URL
-          (import.meta.env as any).VITE_API_URL = apiUrl;
         }
         
         // Fallback to demo mode
