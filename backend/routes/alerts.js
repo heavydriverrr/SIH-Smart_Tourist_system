@@ -128,7 +128,7 @@ router.get('/stats', asyncHandler(async (req, res) => {
       .from('emergency_alerts')
       .select('id')
       .eq('status', 'resolved')
-      .gte('updated_at', new Date().toISOString().split('T')[0]);
+      .gte('created_at', new Date().toISOString().split('T')[0]);
 
     // Get alerts by priority
     const { data: priorityStats, error: priorityError } = await supabaseAdmin
@@ -293,7 +293,6 @@ router.put('/:id/status', requireAlertManager, [
     // Update alert
     const updateData = {
       status,
-      updated_at: new Date().toISOString(),
       assigned_admin_id: req.admin.id
     };
 
@@ -333,7 +332,7 @@ router.put('/:id/status', requireAlertManager, [
       alert_id: id,
       status,
       updated_by: req.admin.name || req.admin.email,
-      timestamp: updateData.updated_at
+      timestamp: new Date().toISOString()
     });
 
     res.json({
