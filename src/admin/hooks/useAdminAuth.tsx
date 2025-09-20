@@ -129,47 +129,71 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
   const login = async (email: string, password: string) => {
     try {
       console.log('🔐 Attempting admin login...', { email });
-      console.log('🌐 Environment check:', {
+      console.log('🌐 Full Environment Debug:', {
         VITE_API_URL: import.meta.env.VITE_API_URL,
+        VITE_WS_URL: import.meta.env.VITE_WS_URL,
         VITE_FALLBACK_TO_DEMO: import.meta.env.VITE_FALLBACK_TO_DEMO,
+        VITE_MAPBOX_ACCESS_TOKEN: import.meta.env.VITE_MAPBOX_ACCESS_TOKEN ? 'SET' : 'NOT_SET',
         NODE_ENV: import.meta.env.NODE_ENV,
-        MODE: import.meta.env.MODE
+        MODE: import.meta.env.MODE,
+        BASE_URL: import.meta.env.BASE_URL,
+        PROD: import.meta.env.PROD,
+        DEV: import.meta.env.DEV
       });
       
-      // Check if we have a valid API URL for backend authentication
-      const hasValidApiUrl = import.meta.env.VITE_API_URL && !import.meta.env.VITE_API_URL.includes('your-backend');
+      console.log('🗺️ All available environment variables:');
+      console.log(Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')));
       
-      // Demo credentials - try backend first if available, otherwise use demo mode
+      // Always try backend first if we have credentials, regardless of API URL visibility
+      const apiUrl = import.meta.env.VITE_API_URL;
+      console.log('🔍 API URL check:', { apiUrl, hasApiUrl: !!apiUrl });
+      
+      // For admin credentials, ALWAYS try backend first
       if (email === 'admin@smartwanderer.com' && password === 'admin123456') {
-        console.log('🎭 Demo credentials detected');
+        console.log('🎭 Admin credentials detected - prioritizing backend connection');
         
-        // If we have a valid API URL, try backend first
-        if (hasValidApiUrl) {
-          console.log('🌐 Valid API URL found, trying backend authentication first...');
-          try {
-            const response = await authAPI.login(email, password);
-            console.log('📥 Backend login response:', response);
+        // Force backend attempt even if API URL seems missing
+        const backendUrl = apiUrl || 'https://smart-wanderer-backend.onrender.com';
+        console.log('🌐 Attempting backend authentication with URL:', backendUrl);
+        
+        try {
+          // Override the API URL temporarily for this attempt
+          const originalUrl = import.meta.env.VITE_API_URL;
+          (import.meta.env as any).VITE_API_URL = backendUrl;
+          
+          const response = await authAPI.login(email, password);
+          console.log('📥 Backend login response:', response);
+          
+          if (response.success) {
+            const { token, admin: adminData } = response;
             
-            if (response.success) {
-              const { token, admin: adminData } = response;
-              
-              console.log('💾 Storing backend admin data...');
-              localStorage.setItem('admin_token', token);
-              localStorage.setItem('admin_user', JSON.stringify(adminData));
-              
-              setAdmin(prevAdmin => {
-                console.log('🔄 Backend auth state update:', adminData);
-                return adminData;
-              });
-              
-              setConnectionStatus('backend');
-              initializeSocket();
-              console.log('✅ Backend admin login successful!');
-              return;
-            }
-          } catch (backendError: any) {
-            console.warn('⚠️ Backend authentication failed, falling back to demo mode:', backendError.message);
+            console.log('💾 Storing backend admin data...');
+            localStorage.setItem('admin_token', token);
+            localStorage.setItem('admin_user', JSON.stringify(adminData));
+            
+            setAdmin(prevAdmin => {
+              console.log('🔄 Backend auth state update:', adminData);
+              return adminData;
+            });
+            
+            setConnectionStatus('backend');
+            initializeSocket();
+            console.log('✅ Backend admin login successful!');
+            return;
           }
+          
+          // Restore original URL
+          (import.meta.env as any).VITE_API_URL = originalUrl;
+          
+        } catch (backendError: any) {
+          console.warn('⚠️ Backend authentication failed:', backendError);
+          console.warn('🔍 Backend error details:', {
+            message: backendError.message,
+            stack: backendError.stack
+          });
+          
+          // Restore original URL
+          (import.meta.env as any).VITE_API_URL = apiUrl;
         }
         
         // Fallback to demo mode

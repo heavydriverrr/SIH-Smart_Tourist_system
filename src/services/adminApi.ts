@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { io, Socket } from 'socket.io-client';
 
-const ADMIN_API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const ADMIN_API_BASE_URL = import.meta.env.VITE_API_URL || 'https://smart-wanderer-backend.onrender.com';
 
 // Create axios instance with default config
 const adminApi = axios.create({
@@ -42,12 +42,14 @@ adminApi.interceptors.response.use(
 // Authentication endpoints (real Supabase with fallback)
 export const authAPI = {
   login: async (email: string, password: string) => {
-    const apiUrl = import.meta.env.VITE_API_URL;
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://smart-wanderer-backend.onrender.com';
     const fallbackToDemo = import.meta.env.VITE_FALLBACK_TO_DEMO === 'true';
     
-    // If no API URL is configured, skip to demo mode immediately
-    if (!apiUrl || apiUrl.includes('your-backend')) {
-      console.log('🎭 No backend API configured, using demo mode only');
+    console.log('🔗 AuthAPI using URL:', apiUrl);
+    
+    // Skip demo mode check - always try backend first
+    if (apiUrl.includes('your-backend')) {
+      console.log('🎭 Placeholder API URL detected, using demo mode only');
       throw new Error('Cannot connect to server. Please ensure the backend is running.');
     }
     
@@ -139,7 +141,7 @@ export const authAPI = {
       throw new Error('No token found');
     }
     
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://smart-wanderer-backend.onrender.com';
     const response = await fetch(`${apiUrl}/api/auth/verify`, {
       method: 'POST',
       headers: {
