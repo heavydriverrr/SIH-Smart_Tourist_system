@@ -62,15 +62,10 @@ const AdminLogin: React.FC = () => {
 
     try {
       await login(email, password);
-      console.log('✅ Login successful, waiting for auth state change');
+      console.log('✅ Login successful, auth state should update automatically');
       
-      // Add a small delay to ensure state is properly updated before redirect
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      console.log('🔄 Checking auth state after login delay...');
-      console.log('Current isAuthenticated:', isAuthenticated);
-      
-      // Don't manually navigate - let the auth state change trigger the redirect
+      // Don't add delay or check auth state - let React handle the redirect
+      // The useEffect monitoring auth changes will handle the redirect
     } catch (error: any) {
       console.error('❌ Login failed:', error);
       setError(error.message || 'Login failed');

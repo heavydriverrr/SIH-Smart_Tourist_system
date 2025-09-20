@@ -230,8 +230,10 @@ export const alertsAPI = {
   getAlertStats: async () => {
     try {
       const response = await adminApi.get('/alerts/stats');
+      console.log('✅ Alert stats loaded from backend');
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
+      console.warn('⚠️ Alert stats API error:', error.response?.status, error.message);
       console.log('🔄 Using mock alert stats for demo');
       return { success: true, data: mockAlertStats };
     }
