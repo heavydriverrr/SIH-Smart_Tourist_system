@@ -268,18 +268,25 @@ import { mockDashboardData, mockTouristLocations, mockAlertStats } from './mockA
 export const adminDashboardAPI = {
   getDashboardData: async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/admin/dashboard', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://smart-wanderer-backend.onrender.com';
+      const response = await fetch(`${apiUrl}/api/admin/dashboard`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('admin_token')}`,
           'Content-Type': 'application/json'
         }
       });
       
+      console.log('📊 Dashboard API response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('API failed');
+        const errorText = await response.text();
+        console.error('❌ Dashboard API error:', errorText);
+        throw new Error('Dashboard API failed');
       }
       
-      return await response.json();
+      const data = await response.json();
+      console.log('✅ Dashboard data loaded from backend');
+      return data;
     } catch (error) {
       console.log('🔄 Using mock dashboard data for demo');
       return { success: true, data: mockDashboardData };
