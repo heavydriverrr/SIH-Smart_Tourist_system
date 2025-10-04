@@ -11,8 +11,7 @@
 
 - **Frontend**: https://trusttourapp.vercel.app/
 - **Admin Dashboard**: https://trusttourapp.vercel.app/admin/login
-- **Repository**: https://github.com/heavydriverrr/smart-wanderer-app
-
+- **Repository**: https://github.com/heavydriverrr/SIH-Smart_Tourist_system
 ## 🔑 Demo Credentials
 
 **Admin Access:**
